@@ -1,21 +1,92 @@
-:root {color-scheme:light; font:14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#142928; background:#fbfcfa;}
-* {box-sizing:border-box} body {width:390px;margin:0;padding:22px} header {display:flex;align-items:center;justify-content:space-between;gap:16px}
-h1 {font-size:23px;line-height:1.2;letter-spacing:-.7px;margin:5px 0} h2 {font-size:14px;margin:0;font-weight:650}
-p {margin:10px 0} .eyebrow {font-size:9px;font-weight:700;letter-spacing:1.5px;color:#4e726b;margin:0}
-.intro {color:#536461;font-size:13px;margin:16px 0 22px} section {margin-top:20px}.section-head {display:flex;justify-content:space-between;align-items:center}
-#count {font-size:11px;color:#63726e} #chips {display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
-.chip {display:inline-flex;gap:8px;align-items:center;padding:6px 9px 6px 12px;background:#e4eeea;border:1px solid #ccddd6;border-radius:6px;font-size:13px}
-.chip button {border:0;background:transparent;color:#3a5a51;font-size:18px;line-height:18px;padding:0 2px}
-button,input {font:inherit} button {cursor:pointer;border:1px solid #1d6253;background:#1d6253;color:white;border-radius:5px;padding:8px 13px;font-weight:600}
-button:hover {filter:brightness(.94)} button:focus-visible,a:focus-visible,summary:focus-visible {outline:2px solid #2c8c76;outline-offset:3px}
-#add-form {display:flex;gap:8px} #place {min-width:0;flex:1;background:white;border:1px solid #bdccc5;border-radius:5px;padding:9px 10px;font-size:12px;color:#142928}
-input:focus-visible {outline:2px solid #2c8c76;outline-offset:2px} .check {display:flex;gap:7px;align-items:center;font-size:12px;margin-top:14px}
-input[type=checkbox] {accent-color:#1d6253} details {font-size:11px;color:#536461;margin-top:10px} summary {cursor:pointer}
-#coverage p {margin:9px 0}.note {font-size:11px;color:#66766f}.behavior {border-top:1px solid #dce3dd;padding-top:17px}.behavior p {font-size:12px;color:#536461;margin:8px 0}
-footer {margin-top:18px;padding-top:13px;border-top:1px solid #dce3dd} #status {font-size:11px;color:#49665b;margin:0 0 10px}
-.footer-actions {display:flex;justify-content:space-between;align-items:center;gap:12px}.quiet {background:transparent;border:0;color:#52635c;font-size:11px;padding:0;font-weight:500}
-a {color:#1d6253;font-size:11px;text-decoration:underline;text-underline-offset:3px}
-.switch {position:relative;width:38px;height:22px;flex:none}.switch input {position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
-.switch span {position:absolute;inset:0;border-radius:15px;background:#bac7c0;pointer-events:none}.switch span:before {content:"";position:absolute;background:white;width:16px;height:16px;left:3px;top:3px;border-radius:50%}
-.switch input:checked + span {background:#1d6253}.switch input:checked + span:before {transform:translateX(16px)}.switch input:focus-visible + span {outline:2px solid #2c8c76;outline-offset:3px}
+@font-face {font-family:Geist;src:url('../assets/fonts/geist-latin.woff2') format('woff2');font-style:normal;font-weight:400 600;font-display:swap}
+:root {
+  color-scheme:light;
+  --ground:#f8f8f8;--surface:#fff;--text:#171717;--muted:#616161;
+  --border:#e6e6e6;--control:#858585;--raised:#eee;--primary:#171717;
+  --positive:#2e7d32;--negative:#a62228;--warning:#805000;
+  --radius:6px;--gap:12px;--pad:24px;
+  font:14px/1.45 Geist,system-ui,sans-serif;color:var(--text);background:var(--ground);
+  font-synthesis:none;
+}
+* {box-sizing:border-box}
+body {font:inherit;margin:0;width:420px;max-width:100vw}
+/* 420px popup = 24px + 372px content + 24px. Every section shares these edges. */
+.popup {padding:20px 24px;background:var(--surface)}
+h1,h2,p {margin:0} h1 {font-size:20px;line-height:1.2;font-weight:500;letter-spacing:-.45px}
+h2 {font-size:14px;font-weight:500;line-height:20px}
+button,input {font:inherit} button,a,input,summary {-webkit-tap-highlight-color:transparent}
+button {cursor:pointer} button:disabled {cursor:wait}
+button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible {outline:2px solid var(--text);outline-offset:3px}
+a {color:var(--text);text-decoration:underline;text-underline-offset:3px}
+.brand {display:flex;align-items:center;gap:12px}
+.brand-mark {width:28px;height:28px;flex:none}
+.scope {font-size:12px;color:var(--muted);margin-top:4px}
+.master {margin-left:auto}
+.note {font-size:12px;line-height:18px;color:var(--muted)}
+.feed-summary {margin-top:18px;padding:12px 16px;background:var(--ground);border-radius:8px}
+.state-heading {display:flex;gap:8px;align-items:center}
+.state-mark {width:6px;height:6px;border-radius:50%;background:var(--muted);flex:none}
+.state-mark[data-state=on] {background:var(--positive)}
+.state-mark[data-state=waiting] {background:var(--warning)}
+#feed-status {font-size:13px;margin-top:4px;line-height:19px;font-variant-numeric:tabular-nums}
+#status:not(:empty) {margin-top:6px}
+.error {font-size:12px;color:var(--negative);margin-top:12px}
+fieldset {padding:0;margin:0;min-width:0;border:0}
+fieldset:disabled {color:var(--muted)}
+.regions {padding-top:18px}
+.section-head,.setting-row {display:flex;align-items:center;justify-content:space-between;gap:12px}
+.regions>.note {margin-top:3px}
+#count {font-variant-numeric:tabular-nums}
+#chips {display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px}
+.chip {display:inline-flex;align-items:center;max-width:100%;gap:4px;padding-left:10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;line-height:18px}
+.chip-label {min-width:0;overflow-wrap:anywhere}
+.chip button {display:grid;place-items:center;flex:none;width:30px;height:32px;padding:0;border:0;background:transparent;color:var(--muted);border-radius:var(--radius);font-size:18px;font-weight:400}
+.chip button:hover {background:var(--raised);color:var(--text)}
+#add-form label {display:block;font-size:13px;font-weight:500;margin-bottom:6px}
+.input-row {display:flex;gap:8px}
+#place {width:100%;min-width:0;height:38px;border:1px solid var(--control);border-radius:var(--radius);padding:0 10px;color:var(--text);background:var(--surface);font-size:13px}
+#place::placeholder {color:var(--muted);opacity:1}
+.primary {border:1px solid var(--primary);background:var(--primary);color:var(--surface);border-radius:var(--radius);height:38px;padding:0 16px;font-size:13px;font-weight:500}
+.primary:hover {background:#333}
+#place-feedback {margin-top:6px;overflow-wrap:anywhere}
+.check {display:flex;align-items:center;gap:8px;margin-top:12px;min-height:24px;font-size:13px;cursor:pointer}
+.check input {margin:0;width:15px;height:15px;accent-color:var(--text);flex:none}
+details {font-size:13px;color:var(--muted)}
+summary {cursor:pointer;min-height:28px;display:flex;align-items:center;gap:7px;list-style:none}
+summary::-webkit-details-marker {display:none}
+summary::before {content:'';width:5px;height:5px;border-right:1.4px solid currentColor;border-bottom:1.4px solid currentColor;transform:rotate(-45deg);margin:0 3px 0 1px;flex:none}
+details[open]>summary::before {transform:rotate(45deg);translate:0 -2px}
+summary:hover {color:var(--text)}
+.coverage {margin-top:2px}
+#coverage p {margin:8px 0;overflow-wrap:anywhere}
+.age {border-top:1px solid var(--border);margin-top:12px;padding-top:14px}
+.setting-row .note {margin-top:3px}
+.age-footnote {margin-top:8px}
+.switch {position:relative;display:block;width:36px;height:28px;flex:none;cursor:pointer}
+.switch input {position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;z-index:1;cursor:pointer}
+.switch span {position:absolute;left:0;right:0;top:4px;height:20px;background:var(--muted);border:1px solid var(--muted);border-radius:12px;pointer-events:none}
+.switch span::before {content:'';position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--surface);transition:transform 120ms ease-out}
+.switch input:checked+span {background:var(--primary);border-color:var(--primary)}
+.switch input:checked+span::before {transform:translateX(16px)}
+.switch input:focus-visible+span {outline:2px solid var(--text);outline-offset:3px}
+.switch input:disabled {cursor:wait}
+.scope-note {display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-top:16px}
+.scope-note svg {width:16px;height:16px;flex:none}
+.activity {border-top:1px solid var(--border);margin-top:12px;padding-top:8px}
+.activity>summary {color:var(--text)}
+.activity-content {padding:8px 0 0}
+.metadata {margin:0 0 12px}
+.metadata>div {display:flex;justify-content:space-between;gap:12px;line-height:24px}
+.metadata dd {margin:0;color:var(--text);font-variant-numeric:tabular-nums}
+.activity-content p+p {margin-top:8px}
+.detail-actions {display:flex;flex-wrap:wrap;gap:16px;margin:12px 0 6px}
+.quiet {border:0;padding:4px 0;background:transparent;color:var(--text);font-size:12px;text-decoration:underline;text-underline-offset:3px}
+footer {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
+footer .note,footer a {font-size:12px;line-height:18px}
+footer a {white-space:nowrap;text-decoration:none}
+footer a:hover {text-decoration:underline}
 .sr-only {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+[hidden] {display:none!important}
+@media (max-width:380px) {.popup {padding:20px}h1 {font-size:18px}.brand {gap:10px}.chip button {width:32px}.check {align-items:flex-start}}
+@media (prefers-reduced-motion:reduce) {* {transition:none!important}}
+@media (forced-colors:active) {.switch span {border:1px solid ButtonText}.switch input:checked+span {background:Highlight}.switch span::before {background:ButtonText}.state-mark {background:CanvasText}}

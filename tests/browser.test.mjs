@@ -164,6 +164,7 @@ try {
   await setFeed(row(301,'europe')+row(302,'europe',{quote:'indian'})+row(303,'indian',{reposter:'europe'})+row(304,'unknown'));
   await hidden(302); await hidden(303);
   await check('Popup reports real feed counts and the latest successful account lookup',async()=>{
+    await popup.locator('.activity').evaluate(el => {el.open = true;});
     await page.bringToFront();
     await popup.evaluate(()=>status());
     assert.match(await popup.locator('#feed-status').innerText(),/^2 posts hidden in this feed/);

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "X Region Filter",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Hide feed posts, reposts and quotes by account region or accounts under three months old.",
   "minimum_chrome_version": "120",
   "permissions": [
@@ -16,7 +16,11 @@
   },
   "action": {
     "default_title": "X Region Filter",
-    "default_popup": "popup/index.html"
+    "default_popup": "popup/index.html",
+    "default_icon": {
+      "16": "assets/icons/icon-16.png",
+      "32": "assets/icons/icon-32.png"
+    }
   },
   "content_scripts": [
     {
@@ -33,5 +37,11 @@
       ],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "icons": {
+    "16": "assets/icons/icon-16.png",
+    "32": "assets/icons/icon-32.png",
+    "48": "assets/icons/icon-48.png",
+    "128": "assets/icons/icon-128.png"
+  }
 }
