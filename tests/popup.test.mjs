@@ -91,13 +91,19 @@ try {
       await browserSession.send('Target.sendMessageToTarget',{sessionId,message:JSON.stringify({id:1,method:'Runtime.evaluate',params:{awaitPromise:true,returnByValue:true,expression:`(async()=>{
         await document.fonts.ready;
         while(document.querySelector('#settings')?.disabled) await new Promise(resolve=>setTimeout(resolve,20));
+        const probe=document.createElement('div');
+        probe.style.cssText='position:absolute;visibility:hidden;width:100px;height:100px;overflow:scroll';
+        document.body.append(probe);
+        const scrollbar=probe.offsetWidth-probe.clientWidth;
+        probe.remove();
         return {width:innerWidth,height:innerHeight,clientWidth:document.documentElement.clientWidth,
-          scrollWidth:document.documentElement.scrollWidth,body:document.body.getBoundingClientRect().width,
+          scrollbar,scrollWidth:document.documentElement.scrollWidth,body:document.body.getBoundingClientRect().width,
           chips:document.querySelectorAll('#chips button').length,ageBottom:document.querySelector('#new-accounts').getBoundingClientRect().bottom};
       })()`}})});
       const metrics=(await result).result.value;
-      // Linux adds a classic scrollbar gutter to the outer viewport width.
-      assert.equal(metrics.clientWidth,460);assert.equal(metrics.scrollWidth,460);
+      // Chromium may reserve a classic scrollbar gutter while its popup resizes.
+      assert.ok(metrics.width>=460 && metrics.width<=460+metrics.scrollbar,JSON.stringify(metrics));
+      assert.ok(metrics.scrollWidth<=metrics.clientWidth,JSON.stringify(metrics));
       assert.equal(metrics.body,460);assert.equal(metrics.chips,4);
       assert.ok(metrics.ageBottom<=metrics.height,JSON.stringify(metrics));
     } finally {
