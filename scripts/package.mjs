@@ -9,7 +9,7 @@ const entries = {};
 // Fixed timestamps and sorted entries make equal sources produce equal archives.
 for (const file of await filesIn('extension')) {
   entries[path.relative('extension', file).split(path.sep).join('/')] = [
-    new Uint8Array(await readFile(file)), {mtime: new Date('2026-01-01T00:00:00Z')}
+    new Uint8Array(await readFile(file)), {mtime: new Date(2026, 0, 1, 0, 0, 0)}
   ];
 }
 const archive = zipSync(entries, {level: 9});
