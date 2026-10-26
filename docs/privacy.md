@@ -8,11 +8,11 @@ Persistent extension storage holds your filter settings; up to 2,000 account han
 
 Session storage holds the observed X Authorization header and the most recent successful lookup. Chrome clears session storage when the browser restarts or the extension is disabled, reloaded, or updated. The header is needed to make the same authenticated About request X's own interface uses. The extension reads the current CSRF cookie for each request and does not save it.
 
-The content script reads visible account identities and post IDs to associate results with feed rows. It does not persist post text, messages, passwords, or a browsing history. Its per-tab account cache is bounded at 1,000 entries.
+The content script reads visible account identities and post IDs to associate results with feed rows. It does not persist post text, messages, passwords, or a browsing history. Its per-tab account cache is bounded at 1,000 entries. On English About pages it also reads the displayed account region, validates the account header, and saves the label without another request. The toolbar badge contains only the current hidden-post count.
 
 ## Removing data
 
-“Clear account cache” removes persistent account metadata and clears the content scripts' account caches. It keeps your filters and request-limit state. The latest lookup can remain visible for the current session. New metadata is collected again as you browse with filtering enabled.
+“Clear account cache” removes persistent account metadata and clears the content scripts' account caches. It keeps your filters and request-limit state. The latest lookup can remain visible for the current session. Automatic checks resume as you browse with filtering enabled. Opening an About page can also repopulate its displayed region.
 
 Disabling the extension stops its work; reload X to clear any already-injected page state. Uninstalling deletes its extension storage. Reload X afterward to remove the existing placeholders and styles.
 

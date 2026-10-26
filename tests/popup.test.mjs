@@ -8,8 +8,8 @@ const require = createRequire(import.meta.url);
 const axe = await readFile(require.resolve('axe-core/axe.min.js'), 'utf8');
 const root = path.resolve('extension');
 const context = await chromium.launchPersistentContext(profile, {
-  executablePath, channel: 'chromium', headless: true, viewport: {width: 420, height: 600},
-  args: [`--load-extension=${root}`, `--disable-extensions-except=${root}`]
+  executablePath, channel: 'chromium', headless: true, viewport: {width: 460, height: 600},
+  args: [`--load-extension=${root}`, `--disable-extensions-except=${root}`, '--blink-settings=minimumFontSize=16,minimumLogicalFontSize=16']
 });
 const report = [];
 const requests = [];
@@ -31,17 +31,34 @@ try {
     assert.equal(await popup.locator('#count').innerText(), '0 selected');
     assert.equal(await popup.locator('#state-title').innerText(), 'Ready for X');
     assert.equal(await popup.evaluate(() => document.fonts.check('14px Geist')), true);
-    assert.match(await popup.locator('#feed-status').innerText(), /Open your X Home/);
+    assert.match(await popup.locator('#feed-status').innerText(), /Open X Home/);
   });
-  await test('Popup fits its normal viewport and narrow layouts without horizontal overflow', async () => {
-    for (const width of [420, 390, 360]) {
+  await test('Popup has an intrinsic 460px width even in a narrow initial window', async () => {
+    for (const width of [460, 250]) {
       await popup.setViewportSize({width, height: 600});
-      const size = await popup.evaluate(() => ({scroll:document.documentElement.scrollWidth, width:innerWidth, height:document.body.scrollHeight}));
-      assert.ok(size.scroll <= size.width, JSON.stringify(size));
-      if (width === 420) assert.ok(size.height <= 600, `Popup is ${size.height}px tall`);
-      await popup.locator('.popup').screenshot({path:`test-results/popup-${width}.png`});
+      const size = await popup.evaluate(() => ({body:document.body.getBoundingClientRect().width, root:document.documentElement.getBoundingClientRect().width, height:document.body.scrollHeight}));
+      assert.equal(size.body,460);
+      assert.equal(size.root,460);
+      assert.ok(size.height <= 600, `Popup is ${size.height}px tall`);
     }
-    await popup.setViewportSize({width:420, height:600});
+    await popup.setViewportSize({width:460, height:600});
+    await popup.locator('.popup').screenshot({path:'test-results/popup-460.png'});
+    await popup.evaluate(()=>{config.blocked=['Japan','Europe','South Asia','North America'];render();});
+    assert.ok(await popup.evaluate(()=>document.querySelector('#new-accounts').getBoundingClientRect().bottom <= 600));
+    await popup.locator('.popup').screenshot({path:'test-results/popup-460-selected.png'});
+    await popup.evaluate(()=>{config.blocked=[];render();});
+  });
+  await test('South Asia appears in the picker and matches Southern Asia without duplicates', async () => {
+    assert.equal(await popup.locator('#places option[value="South Asia"]').count(),1);
+    await popup.locator('#place').fill('South Asia');
+    await popup.locator('#place').press('Enter');
+    await popup.evaluate(()=>saving);
+    assert.equal(await worker.evaluate(()=>XRF.matches('Southern Asia',config)),true);
+    assert.equal(await worker.evaluate(()=>XRF.matches('India',config)),true);
+    await popup.locator('#place').fill('Southern Asia');
+    await popup.locator('#place').press('Enter');
+    assert.equal(await popup.locator('#chips button').count(),1);
+    await popup.getByRole('button',{name:'Remove South Asia',exact:true}).click();
   });
   await test('Keyboard can add a region; duplicate and long labels stay readable', async () => {
     await popup.locator('#place').fill('Europe');

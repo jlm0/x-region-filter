@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0
+
+- Reuse regions shown on About pages and update open feeds without a second lookup.
+- Keep a disconnected tab from pausing checks in every tab.
+- Add a per-tab hidden-post badge and colored toolbar icon.
+- Fix the popup’s narrow window sizing and shorten its copy.
+- Include South Asia and other familiar region names in the picker.
+
 ## 0.5.1
 
 - Start new installations with an empty region list while preserving saved choices on update.

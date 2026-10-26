@@ -19,7 +19,7 @@ function render() {
   if (!config.blocked.length) {
     const empty = document.createElement('p');
     empty.className = 'note';
-    empty.textContent = 'No regions blocked. Add one below.';
+    empty.textContent = 'No regions blocked.';
     $('chips').append(empty);
   }
   for (const [index, label] of config.blocked.entries()) {
@@ -68,24 +68,24 @@ async function status() {
     } else {
       heading(state.reason ? 'Waiting to check accounts' : state.connected ? 'Filtering on' : 'Ready for X', state.reason ? 'waiting' : state.connected ? 'on' : '');
       $('feed-status').textContent = scoped
-        ? `${state.feed.hidden} ${state.feed.hidden === 1 ? 'post' : 'posts'} hidden in this feed · ${state.feed.waiting} authors awaiting a check`
-        : 'Open your X Home feed or a List to start.';
+        ? `${state.feed.hidden} ${state.feed.hidden === 1 ? 'post' : 'posts'} hidden · ${state.feed.waiting} awaiting check`
+        : 'Open X Home or a List.';
     }
     const resume = state.retryAt > Date.now()
       ? ` Next check after ${new Date(state.retryAt).toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'})}.` : '';
     $('status').textContent = !active ? '' : state.reason ? state.reason + resume
-      : state.connected ? 'Connected. New accounts are checked gradually.' : '';
+      : '';
     $('known-locations').textContent = Number.isFinite(state.known) ? state.known.toLocaleString() : '-';
     $('known-ages').textContent = Number.isFinite(state.ageKnown) ? state.ageKnown.toLocaleString() : '-';
     const account = state.lastLookup;
     if (account) {
       const joined = account.createdAt ? ` · Joined ${new Date(account.createdAt).toLocaleDateString()}` : '';
       const reason = XRF.matchReason(account, config);
-      $('last-lookup').textContent = `Last lookup: @${account.handle} · ${account.location || 'Location unavailable'}${joined}${reason ? ` · ${reason === 'age' ? 'under 3 months old' : 'matches your blocked regions'}` : ''}`;
+      $('last-lookup').textContent = `Last checked: @${account.handle} · ${account.location || 'Region unknown'}${joined}${reason ? ` · ${reason === 'age' ? 'under 3 months' : 'region match'}` : ''}`;
     } else $('last-lookup').textContent = 'No account checked in this browser session.';
     $('quota-status').textContent = state.quota
-      ? `X About allowance: ${state.quota.remaining} of ${state.quota.limit} remaining. Shared with your About-page visits.`
-      : 'At most 20 new checks per 15 minutes, with at least 30 seconds between checks.';
+      ? `About checks: ${state.quota.remaining}/${state.quota.limit} left, shared with X.`
+      : 'Up to 20 checks per 15 min · 30 sec apart.';
   } catch {
     if (version !== statusVersion) return;
     heading('Status unavailable');

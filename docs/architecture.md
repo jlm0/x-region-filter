@@ -10,9 +10,11 @@ The content script runs on `x.com` but filters only `/home` and `/i/lists/<id>`.
 
 Author extraction uses rendered headers and repost context. It includes visible quoted author headers, including linkless quotes, and excludes ordinary mentions. Each article has an identity so a late result cannot hide a different post after X recycles the row.
 
+An isolated About-page observer reads the rendered English “Account based in” field only on `/handle/about`, validates it against the account header, and shares it through the existing cache. It makes no requests and does not infer a creation date from the month-only Date joined display. A newly observed region that does not match still allows the ordinary age lookup when that rule is enabled; a region match needs no second request. Cache changes immediately reevaluate matching feed rows, even during a lookup cooldown.
+
 A fresh cached result is checked first. If metadata is missing, the worker queues a shared lookup. Region and age are an OR condition; a region match takes precedence in the placeholder wording. Missing data leaves the post visible.
 
-A match adds attributes to the article. CSS hides its children and leaves a 28-pixel placeholder. The article becomes inert and hidden from the accessibility tree, and its videos pause. X retains ownership of its DOM and scroll containers. Disabling the rule, leaving a supported route, or reusing the row restores it. An age anniversary schedules reevaluation without another network request.
+A match adds attributes to the article. CSS hides its children and leaves a 28-pixel placeholder. The article becomes inert and hidden from the accessibility tree, and its videos pause. X retains ownership of its DOM and scroll containers. Disabling the rule, leaving a supported route, or reusing the row restores it. An age anniversary schedules reevaluation without another network request. A per-tab toolbar badge counts currently hidden mounted posts, caps its text at 99+, and clears on pause or navigation. Count messages are batched at 100 milliseconds and sent only when the count changes.
 
 ## The request path
 
@@ -38,7 +40,7 @@ The worker accepts lookup messages only from top-level X tabs and status/cache m
 
 X's reported quota is an additional limit. The extension keeps at least ten requests or 20% of the reported limit in reserve, bounded below the total. Native About-page visits update the same tracker. Late responses cannot increase the remaining allowance within a window. Guard and quota state persist across worker restarts.
 
-Authentication failures, changed response formats, and rate-limit errors pause lookups. An in-flight success cannot clear a concurrent native rate-limit warning. Cache hits remain available before request capacity is checked. Disabling the final rule cancels the lookup without recording a false failure cooldown.
+Authentication failures, changed response formats, and rate-limit errors pause lookups. An in-flight success cannot clear a concurrent native rate-limit warning. Cache hits remain available before request capacity is checked. Disabling the final rule cancels the lookup without recording a false failure cooldown. Closing a queued tab removes its client; a disconnected content script defers that account without pausing all tabs.
 
 ## Changing the UI
 
