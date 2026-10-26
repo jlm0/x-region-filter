@@ -8,4 +8,4 @@ Run `npm test`, `npm run test:performance`, and `npm run build` before submittin
 
 Use synthetic accounts in tests and screenshots. Never commit a browser profile, session headers, cookies, a real network export, or local verification records from someone's feed. Do not add a permission, a lookup type, or an earlier cache refresh without explaining why it is needed and how it affects X's shared allowance.
 
-The project currently has a private repository. Public issue and pull-request workflows become available when the owner publishes it. For a release, update both package and manifest versions, add a changelog entry, run the checks, and inspect the packaged extension before uploading it.
+Report bugs and propose changes through GitHub issues and pull requests. For a release, update both package and manifest versions, add a changelog entry, run the checks, and inspect the packaged extension before uploading it.
