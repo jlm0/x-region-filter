@@ -82,8 +82,9 @@ async function lookup(handle, tabId) {
   await ready;
   if (!XRF.active(config)) return deferred('paused');
   const entry = cache.get(handle);
-  if (entry && entry.expiresAt > Date.now()) return {...entry, cached: true};
-  cache.delete(handle);
+  if (entry && entry.expiresAt > Date.now() &&
+      (!entry.ageUnchecked || !config.blockNewAccounts || XRF.matches(entry.location, config))) return {...entry, cached: true};
+  if (!(entry?.expiresAt > Date.now())) cache.delete(handle);
   const wait = capacity();
   if (wait) return {location: null, ...wait};
   if (!sessionHeaders) return deferred('Open or reload your X feed to connect.');
@@ -105,6 +106,24 @@ async function cooldown(reason, until) {
   await chrome.storage.local.set({guard});
   clearQueue(reason, guard.until);
 }
+async function rememberAbout(handle, location) {
+  await ready;
+  const previous = cache.get(handle);
+  // The visible About page supplies a region, not an exact creation timestamp.
+  const entry = {location, createdAt: previous?.createdAt || null,
+    ageUnchecked: !previous?.createdAt, expiresAt: Date.now() + DAY / 4};
+  cache.delete(handle);
+  cache.set(handle, entry);
+  while (cache.size > MAX_CACHE) cache.delete(cache.keys().next().value);
+  const queued = queue.findIndex(job => job.handle === handle);
+  if (queued !== -1 && (!entry.ageUnchecked || !config.blockNewAccounts || XRF.matches(location, config))) {
+    finish(queue.splice(queued, 1)[0], entry);
+  }
+  await chrome.storage.local.set({cache: [...cache]});
+  lastLookup = {handle, location, createdAt: entry.createdAt, at: Date.now(), source: 'about-page'};
+  await chrome.storage.session.set({lastLookup});
+  return {ok: true};
+}
 function resetTime(headers) {
   const now = Date.now();
   const reset = Number(headers.get('x-rate-limit-reset')) * 1000;
@@ -122,7 +141,7 @@ function requestFromTab(tabId, handle, signal) {
     if (signal.aborted) {cancel(); return;}
     signal.addEventListener('abort', cancel, {once: true});
     chrome.tabs.sendMessage(tabId, {type: 'fetchCountry', requestId, handle, queryId,
-      authorization: sessionHeaders.authorization}).then(resolve, reject)
+      authorization: sessionHeaders.authorization}).then(resolve, () => reject(Object.assign(new Error('X tab disconnected'), {code: 'tab-disconnected'})))
       .finally(() => signal.removeEventListener('abort', cancel));
   });
 }
@@ -181,8 +200,9 @@ async function pump() {
       if (guard.until <= Date.now()) guard.reason = '';
       finish(job, entry);
     }
-  } catch {
+  } catch (error) {
     if (!XRF.active(config)) finish(job, deferred('paused'));
+    else if (error.code === 'tab-disconnected') finish(job, deferred('Waiting for an active X tab.', MIN_GAP));
     else {
       await cooldown('Lookup unavailable. Open About this account on an X profile to refresh it.', Date.now() + 300000).catch(() => {});
       finish(job, {location: null, reason: guard.reason, retryAt: guard.until || Date.now() + 60000});
@@ -247,7 +267,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
     if (!XRF.active(config)) {clearQueue('paused'); controller?.abort();}
   }
 });
-chrome.tabs.onRemoved.addListener(id => visibility.delete(id));
+chrome.tabs.onRemoved.addListener(id => {
+  visibility.delete(id);
+  for (const job of jobs.values()) job.clients.delete(id);
+});
 chrome.runtime.onInstalled.addListener(() => {
   void ready.then(() => chrome.storage.local.set({settings: config}));
 });
@@ -255,6 +278,26 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   const extensionPage = sender.url?.startsWith(chrome.runtime.getURL(''));
   const xPage = sender.tab && sender.frameId === 0 && /^https:\/\/x\.com\//.test(sender.url || '');
   if (!extensionPage && !xPage) return false;
+  if (message?.type === 'hiddenCount' && xPage && Number.isInteger(message.hidden) &&
+      message.hidden >= 0 && message.hidden <= 10000) {
+    const hidden = XRF.feedPath(new URL(sender.url).pathname) && XRF.active(config) ? message.hidden : 0;
+    const tabId = sender.tab.id;
+    void Promise.all([
+      chrome.action.setBadgeText({tabId, text: hidden > 99 ? '99+' : hidden ? String(hidden) : ''}),
+      chrome.action.setBadgeBackgroundColor({tabId, color: '#0f766e'}),
+      chrome.action.setBadgeTextColor({tabId, color: '#ffffff'}),
+      chrome.action.setTitle({tabId, title: hidden ? `X Region Filter · ${hidden} ${hidden === 1 ? 'post' : 'posts'} hidden` : 'X Region Filter'})
+    ]).catch(() => {});
+    respond({ok: true});
+    return false;
+  }
+  if (message?.type === 'observedAbout' && xPage &&
+      /^[a-z0-9_]{1,15}$/.test(message.handle || '') &&
+      XRF.aboutHandle(new URL(sender.url).pathname) === message.handle &&
+      typeof message.location === 'string' && message.location.trim() && message.location.length <= 100) {
+    rememberAbout(message.handle, message.location.trim()).then(respond).catch(() => respond({ok: false}));
+    return true;
+  }
   if (message?.type === 'visibility' && xPage) {
     visibility.set(sender.tab.id, message.visible === true); respond({ok: true}); return false;
   }

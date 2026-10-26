@@ -25,13 +25,14 @@
     }
   }
   // Familiar English labels for the UN M49 subregions.
-  for (const [short, official] of Object.entries({
+  const regionAliases = {
     'South Asia': 'Southern Asia', 'East Asia': 'Eastern Asia',
     'Southeast Asia': 'South-eastern Asia', 'South East Asia': 'South-eastern Asia',
     'West Asia': 'Western Asia', 'North Africa': 'Northern Africa',
     'East Africa': 'Eastern Africa', 'West Africa': 'Western Africa',
     'Central Africa': 'Middle Africa', 'Latin America': 'Latin America and the Caribbean'
-  })) alias(short, official);
+  };
+  for (const [short, official] of Object.entries(regionAliases)) alias(short, official);
   for (const [short, official] of Object.entries({
     'USA': 'US', 'United States of America': 'US', 'UK': 'GB',
     'United Kingdom': 'GB', 'Great Britain': 'GB', 'Russia': 'RU',
@@ -148,9 +149,27 @@
   }
   const parseAccount = (data, requested) => parseAccountDetails(data, requested).location;
   const feedPath = path => /^\/home\/?$/.test(path) || /^\/i\/lists\/\d+\/?$/.test(path);
+  const aboutHandle = path => path.match(/^\/([A-Za-z0-9_]{1,15})\/about\/?$/)?.[1].toLowerCase() || null;
+  function readAboutPage(root, path) {
+    const handle = aboutHandle(path);
+    const column = root.querySelector('[data-testid="primaryColumn"]');
+    if (!handle || !column || column.querySelector('article[data-testid="tweet"]')) return null;
+    // Tie the label to X's account header, never a bio, post, sidebar, or stale SPA page.
+    if (![...column.querySelectorAll('[data-testid^="UserAvatar-Container-"]')]
+      .some(node => node.dataset.testid.toLowerCase() === `useravatar-container-${handle}`) ||
+      ![...column.querySelectorAll('span')].some(node => node.textContent.trim().toLowerCase() === `@${handle}`)) return null;
+    for (const row of column.querySelectorAll('[data-testid="pivot"]')) {
+      const label = [...row.querySelectorAll('span')].find(node => node.textContent.trim() === 'Account based in');
+      const value = label?.parentElement?.nextElementSibling;
+      const location = value?.textContent.trim();
+      if (location && location.length <= 100 && !value.querySelector('a, button') &&
+          label.getClientRects().length && value.getClientRects().length) return {handle, location};
+    }
+    return null;
+  }
   globalThis.XRF = Object.freeze({normalize, canonical, settings, defaults, matches, active, ageLimitAt, matchReason,
-    handleFromLink, authors, identity, parseAccount, parseAccountDetails, feedPath,
-    choices: [...labels.values()].sort((a, b) => a.localeCompare(b)),
+    handleFromLink, authors, identity, parseAccount, parseAccountDetails, feedPath, aboutHandle, readAboutPage,
+    choices: [...new Set([...labels.values(), ...Object.keys(regionAliases)])].sort((a, b) => a.localeCompare(b)),
     members: label => [...(groups.get(canonical(label)) || [])].map(key => labels.get(key) || key).sort()
   });
 })();

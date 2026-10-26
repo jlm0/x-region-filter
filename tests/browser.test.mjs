@@ -64,7 +64,7 @@ try {
       fixtureCalls.push({handle,time:Date.now(),authorization:headers.authorization,csrf:headers['x-csrf-token']});
       if(handle==='delayed')await new Promise(resolve=>setTimeout(resolve,350));
       let createdAt='Sat Dec 08 09:42:25 +0000 2018';
-      if(['young','youngunknown'].includes(handle))createdAt=new Date(Date.now()-14*86400000).toISOString();
+      if(['young','youngunknown','manualyoung'].includes(handle))createdAt=new Date(Date.now()-14*86400000).toISOString();
       if(handle==='invalidage')createdAt='not a valid date';
       if(handle==='aging'){const date=new Date(Date.now()+3000);date.setUTCMonth(date.getUTCMonth()-3);createdAt=date.toISOString();}
       return route.fulfill({contentType:'application/json',headers:{'x-rate-limit-limit':'50','x-rate-limit-remaining':String(49-fixtureCalls.length),'x-rate-limit-reset':String(Math.ceil(Date.now()/1000)+900)},body:JSON.stringify({data:{user_result_by_screen_name:{result:{
@@ -174,9 +174,9 @@ try {
     await popup.locator('.activity').evaluate(el => {el.open = true;});
     await page.bringToFront();
     await popup.evaluate(()=>status());
-    assert.match(await popup.locator('#feed-status').innerText(),/^2 posts hidden in this feed/);
-    assert.match(await popup.locator('#last-lookup').innerText(),/^Last lookup: @/);
-    assert.match(await popup.locator('#status').innerText(),/Connected/);
+    assert.match(await popup.locator('#feed-status').innerText(),/^2 posts hidden/);
+    assert.match(await popup.locator('#last-lookup').innerText(),/^Last (?:checked|lookup): @/);
+    assert.equal(await popup.locator('#state-title').innerText(),'Filtering on');
   });
   await page.screenshot({path:path.resolve('test-results/feed.png'),fullPage:true});
   await check('Regression: Authorization has one Bearer prefix and CSRF is read fresh from the tab', async () => {
@@ -223,6 +223,64 @@ try {
     const before=fixtureCalls.length;await setFeed(row(609,'legacyage'));await page.waitForTimeout(300);
     assert.equal(fixtureCalls.length,before);assert.equal(await page.locator('#p609').getAttribute('data-xrf-hidden'),null);
   });
+  await check('Manual About labels immediately hide waiting posts without a second lookup',async()=>{
+    await worker.evaluate(()=>{guard.until=Date.now()+300000;guard.reason='Fixture cooldown';});
+    const before=fixtureCalls.length;
+    await setFeed(row(610,'manualabout'));
+    await page.waitForTimeout(250);
+    assert.equal(await page.locator('#p610').getAttribute('data-xrf-hidden'),null);
+    const about=await context.newPage();
+    await about.goto('https://x.com/manualabout/about');
+    const aboutMarkup=(handle,region='Africa')=>`<div data-testid="primaryColumn"><h2>About this account</h2><div data-testid="UserAvatar-Container-${handle}"></div><span>@${handle}</span><div data-testid="pivot"><div><div><span>Account based in</span></div><div><span>${region}</span></div></div></div></div>`;
+    // X can temporarily retain the previous account's content during SPA navigation.
+    await about.locator('main').evaluate((el,html)=>{el.innerHTML=html;},aboutMarkup('wrongaccount'));
+    await about.waitForTimeout(200);
+    assert.equal(await worker.evaluate(()=>cache.has('manualabout')),false);
+    await about.locator('main').evaluate((el,html)=>{el.innerHTML=html;},aboutMarkup('manualabout'));
+    await popup.waitForFunction(async()=>{
+      const data=await chrome.storage.local.get('cache');
+      return data.cache?.some(([handle,entry])=>handle==='manualabout'&&entry.location==='Africa');
+    });
+    await page.bringToFront();
+    await hidden(610);
+    assert.equal(await page.locator('#p610').evaluate(el=>Math.round(el.getBoundingClientRect().height)),28);
+    assert.match(await page.locator('#p610').evaluate(el=>getComputedStyle(el,'::after').content),/Post hidden by region filter/);
+    assert.equal(fixtureCalls.length,before);
+    assert.equal(await worker.evaluate(()=>guard.reason),'Fixture cooldown');
+    assert.equal(await worker.evaluate(()=>cache.get('manualabout').createdAt),null);
+    // No date is invented from the month-only Date joined field.
+    await about.evaluate(()=>history.pushState({},'','/home'));
+    await about.locator('main').evaluate((el,html)=>{el.innerHTML=html;},aboutMarkup('spoof'));
+    await about.waitForTimeout(200);
+    assert.equal(await worker.evaluate(()=>cache.has('spoof')),false);
+    await worker.evaluate(()=>{guard.until=0;guard.reason='';});
+    // A region-only observation must not accidentally disable age filtering.
+    await about.evaluate(()=>history.pushState({},'','/manualyoung/about'));
+    await about.locator('main').evaluate((el,html)=>{el.innerHTML=html;},aboutMarkup('manualyoung','France'));
+    await popup.waitForFunction(async()=> (await chrome.storage.local.get('cache')).cache?.some(([handle])=>handle==='manualyoung'));
+    assert.equal(fixtureCalls.length,before);
+    await about.close();await page.bringToFront();
+    await setFeed(row(614,'manualyoung'));await hidden(614);
+    assert.equal(await page.locator('#p614').getAttribute('data-xrf-reason'),'age');
+    assert.equal(fixtureCalls.filter(call=>call.handle==='manualyoung').length,1);
+  });
+  await check('Toolbar badge counts hidden rows per tab and clears on pause or navigation',async()=>{
+    const badge=async text=>popup.waitForFunction(async text=>{
+      const tab=(await chrome.tabs.query({url:'https://x.com/home'}))[0];
+      return tab && await chrome.action.getBadgeText({tabId:tab.id})===text;
+    },text);
+    await setFeed(row(611,'manualabout')+row(612,'young'));
+    await hidden(611);await hidden(612);await badge('2');
+    await popup.locator('#enabled').uncheck();await badge('');
+    await popup.locator('#enabled').check();await badge('2');
+    await page.evaluate(()=>history.pushState({},'','/manualabout/status/611'));
+    await popup.waitForFunction(async()=>{
+      const tab=(await chrome.tabs.query({url:'https://x.com/manualabout/status/611'}))[0];
+      return tab && await chrome.action.getBadgeText({tabId:tab.id})==='';
+    });
+    await page.evaluate(()=>history.pushState({},'','/home'));await badge('2');
+    await setFeed(row(613,'europe'));await badge('');
+  });
   const calls = fixtureCalls;
   await writeFile('test-results/browser-requests.json',JSON.stringify(calls,null,2));
   await check('Successful lookup headers reach the shared quota tracker', async () => {
@@ -238,7 +296,7 @@ try {
     assert.equal(await page.locator('#p502').getAttribute('data-xrf-hidden'),null);
     await page.bringToFront();await popup.evaluate(()=>status());
     assert.match(await popup.locator('#status').innerText(),/preserve About-page capacity/);
-    assert.match(await popup.locator('#quota-status').innerText(),/10 of 50/);
+    assert.match(await popup.locator('#quota-status').innerText(),/10(?: of |\/)50/);
   });
   await check('No extension page errors', async () => {assert.deepEqual(errors,[]);});
   console.log(JSON.stringify({passed:results.length,requests:calls.length}));

@@ -96,6 +96,43 @@ await test('Region hierarchy: Africa, countries, subregions, aliases, and exact-
   assert.equal(x.matches('India',x.settings({blocked:['South Asia'],expandRegions:false})),false);
   assert.equal(x.matches('Northern Africa',x.settings({blocked:['Africa'],expandRegions:false})),false);
   assert.ok(x.members('Africa').length>50);
+  assert.ok(x.choices.includes('South Asia'));
+  assert.equal(x.matches('South Asia',x.settings({blocked:['Southern Asia']})),true);
+});
+await test('Observed About labels update cache without requests or changing the cooldown',async()=>{
+  const guard={starts:[1699999999000],nextAt:1700000030000,until:1700000060000,reason:'Saved cooldown'};
+  const h=await harness({local:{guard,cache:[['alice',{location:null,createdAt:1600000000000,expiresAt:1700000010000}]]}});
+  const listener=h.events.message[0];
+  const sender={tab:{id:1},frameId:0,url:'https://x.com/alice/about'};
+  const result=await new Promise(resolve=>listener({type:'observedAbout',handle:'alice',location:'Africa'},sender,resolve));
+  assert.equal(result.ok,true);
+  assert.equal(h.local.cache[0][1].location,'Africa');
+  assert.equal(h.local.cache[0][1].createdAt,1600000000000);
+  assert.deepEqual(h.local.guard,guard);
+  assert.equal(h.calls.length,0);
+  assert.equal(h.session.lastLookup.source,'about-page');
+  for(const bad of [{...sender,url:'https://x.com/home'},{...sender,frameId:1},{...sender,url:'https://x.com/bob/about'}]) {
+    assert.equal(listener({type:'observedAbout',handle:'alice',location:'France'},bad,()=>{throw new Error('Unexpected response');}),false);
+  }
+  assert.equal(h.local.cache[0][1].location,'Africa');
+  assert.equal(listener({type:'observedAbout',handle:null,location:'Africa'},{...sender,url:'https://x.com/home'},()=>{throw new Error('Unexpected response');}),false);
+});
+await test('An About visit satisfies a queued lookup without consuming a request',async()=>{
+  const h=await harness({local:{settings:{blocked:['Africa']}}});await h.connect();
+  h.run('guard.nextAt=Date.now()+30000');
+  const pending=h.run("lookup('alice',1)");await settle();
+  await h.run("rememberAbout('alice','Africa')");
+  assert.equal((await pending).location,'Africa');
+  await h.advance(30000);
+  assert.equal(h.calls.length,0);assert.equal(h.run('jobs.size'),0);
+});
+await test('An allowed About label does not suppress the normal account-age check',async()=>{
+  const h=await harness({local:{settings:{blocked:['Africa']}}});await h.connect();
+  await h.run("rememberAbout('alice','France')");
+  h.context.response=async()=>new Response(JSON.stringify({data:{user_result_by_screen_name:{result:{core:{screen_name:'alice',created_at:'2023-11-01T00:00:00Z'},about_profile:{account_based_in:'France'}}}}}));
+  const pending=h.run("lookup('alice',1)");await h.advance(0);
+  assert.equal((await pending).createdAt,Date.parse('2023-11-01T00:00:00Z'));
+  assert.equal(h.calls.length,1);
 });
 await test('Response parser rejects wrong author and changed schema; missing labels stay unknown',async()=>{
   const h=await harness();const x=h.context.XRF;
@@ -180,6 +217,21 @@ await test('Queue remains capped, paused settings cancel queued work, invisible 
   assert.equal(h.calls.length,0);await Promise.all(requests);assert.equal(h.run('jobs.size'),0);
   await h.context.chrome.storage.local.set({settings:{enabled:true,blocked:['India']}});
   h.run('visibility.set(1,false)');const p=h.run("lookup('invisible',1)");await h.advance(0);await p;assert.equal(h.calls.length,0);
+});
+await test('Closing a queued or fetching X tab cannot pause all other account checks',async()=>{
+  const h=await harness();await h.connect();
+  const queued=h.run("lookup('closedtab',1)");await settle();
+  for(const fn of h.events.tabRemoved)fn(1);
+  await h.advance(0);await queued;
+  assert.equal(h.calls.length,0);
+  const base=h.context.response;
+  h.context.response=async()=>{throw new Error('Receiving end does not exist');};
+  const gone=h.run("lookup('disconnected',2)");await h.advance(0);
+  assert.match((await gone).reason,/active X tab/);
+  assert.equal(h.run('guard.until'),0);
+  h.context.response=base;
+  const next=h.run("lookup('stillopen',3)");await h.advance(30000);
+  assert.equal((await next).location,'India');
 });
 await test('Cache expiry and 2,000-entry bound preserve freshness and memory limits',async()=>{
   const h=await harness();await h.connect();

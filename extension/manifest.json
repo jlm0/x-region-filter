@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "X Region Filter",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Hide feed posts, reposts and quotes by account region or accounts under three months old.",
   "minimum_chrome_version": "120",
   "permissions": [
@@ -30,7 +30,8 @@
       "js": [
         "shared/regions.js",
         "shared/core.js",
-        "content/content.js"
+        "content/content.js",
+        "content/about.js"
       ],
       "css": [
         "content/content.css"

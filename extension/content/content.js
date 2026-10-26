@@ -7,6 +7,8 @@
   let frame = null;
   let retryTimer = null;
   let stopped = false;
+  let badgeTimer = null;
+  let lastBadge = -1;
   const records = new Map();
   const dirty = new Set();
   const visible = new Set();
@@ -15,6 +17,16 @@
   const subscribers = new Map();
   const send = message => chrome.runtime.sendMessage(message);
   const transports = new Map();
+  function reportHidden() {
+    if (badgeTimer) return;
+    badgeTimer = setTimeout(() => {
+      badgeTimer = null;
+      const hidden = [...records.values()].filter(record => record.hidden).length;
+      if (hidden === lastBadge) return;
+      lastBadge = hidden;
+      void send({type: 'hiddenCount', hidden}).catch(() => {});
+    }, 100);
+  }
 
   // The site's JavaScript cannot call this isolated-world extension listener.
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
@@ -71,6 +83,7 @@
     article.inert = record.inert;
     record.hidden = false;
     record.reason = null;
+    reportHidden();
   }
   function hide(article, record, reason) {
     if (record.reason !== reason) {article.setAttribute('data-xrf-reason', reason); record.reason = reason;}
@@ -81,6 +94,7 @@
     article.setAttribute('aria-hidden', 'true');
     article.inert = true;
     record.hidden = true;
+    reportHidden();
     for (const video of article.querySelectorAll('video')) video.pause();
   }
   function unsubscribe(article, record) {
@@ -126,6 +140,9 @@
       for (const {handle} of records.get(article)?.authors || []) {
         const entry = accounts.get(handle);
         if (entry) next = Math.min(next, entry.expiresAt || entry.retryAt || Infinity);
+        if (entry?.ageUnchecked && config.blockNewAccounts && !XRF.matches(entry.location, config)) {
+          next = Math.min(next, entry.retryAt || Infinity);
+        }
         const ageLimit = config.blockNewAccounts ? XRF.ageLimitAt(entry?.createdAt) : null;
         if (ageLimit > Date.now()) next = Math.min(next, ageLimit);
       }
@@ -139,6 +156,12 @@
     if (pending.has(handle) || !enabled || document.hidden) return;
     const promise = send({type: 'lookup', handle}).then(result => {
       if (!result || typeof result !== 'object') return;
+      // A manual About visit can fill the cache while an older queued reply is pending.
+      const current = accounts.get(handle);
+      if (current?.expiresAt > Date.now() && !(result.expiresAt >= current.expiresAt)) {
+        if (result.retryAt) accounts.set(handle, {...current, retryAt: result.retryAt});
+        return;
+      }
       accounts.delete(handle);
       accounts.set(handle, result);
       while (accounts.size > 1000) accounts.delete(accounts.keys().next().value);
@@ -179,7 +202,8 @@
     if (!visible.has(article)) return;
     for (const {handle} of record.authors) {
       const entry = accounts.get(handle);
-      if (!entry || Math.max(entry.expiresAt || 0, entry.retryAt || 0) <= now) request(handle);
+      if (!entry || Math.max(entry.expiresAt || 0, entry.retryAt || 0) <= now ||
+          (entry.ageUnchecked && config.blockNewAccounts && (entry.retryAt || 0) <= now)) request(handle);
     }
   }
   function flush() {
@@ -223,6 +247,7 @@
   function sync() {
     const active = !stopped && XRF.active(config) && XRF.feedPath(location.pathname);
     enabled = !!active;
+    reportHidden();
     void send({type: 'visibility', visible: enabled && !document.hidden}).catch(() => {});
     if (!enabled) {
       mutations.disconnect();
@@ -246,6 +271,17 @@
     if (changes.cache && !changes.cache.newValue) {
       accounts.clear();
       for (const article of records.keys()) enqueue(article);
+    } else if (changes.cache?.newValue) {
+      for (const [handle, entry] of changes.cache.newValue) {
+        if (!subscribers.has(handle) || !(entry.expiresAt > Date.now())) continue;
+        const previous = accounts.get(handle);
+        if (previous?.expiresAt === entry.expiresAt && previous.location === entry.location &&
+            previous.createdAt === entry.createdAt && previous.ageUnchecked === entry.ageUnchecked) continue;
+        accounts.delete(handle);
+        accounts.set(handle, entry);
+        while (accounts.size > 1000) accounts.delete(accounts.keys().next().value);
+        for (const article of subscribers.get(handle)) enqueue(article);
+      }
     }
   });
   document.addEventListener('visibilitychange', () => {
