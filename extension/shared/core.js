@@ -48,7 +48,7 @@
     const key = normalize(value);
     return aliases.get(key) || key;
   };
-  const defaults = Object.freeze({enabled: true, blocked: ['India', 'Africa'], expandRegions: true, blockNewAccounts: true});
+  const defaults = Object.freeze({enabled: true, blocked: [], expandRegions: true, blockNewAccounts: true});
   function settings(value = {}) {
     return {
       enabled: value.enabled !== false,

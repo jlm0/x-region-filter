@@ -4,7 +4,7 @@ The automated checks use synthetic data in disposable profiles. They establish b
 
 ## What runs
 
-`npm run test:unit` runs 20 controlled-clock checks of region membership, response validation, settings migration, calendar-month boundaries, cache expiry, concurrency, pacing, the rolling request budget, native quota accounting, restart persistence, and cancellation. It uses the production limits.
+`npm run test:unit` runs 21 controlled-clock checks of region membership, response validation, empty defaults, preservation of saved settings on update, calendar-month boundaries, cache expiry, concurrency, pacing, the rolling request budget, native quota accounting, restart persistence, and cancellation. It uses the production limits.
 
 `npm run test:browser` loads the unpacked extension and runs 25 checks against X-shaped pages and intercepted responses. It covers direct posts, original and reposting authors, rendered quotes, linkless and nested quote headers, ordinary mentions, row recycling, delayed responses, navigation, pause/resume, placeholders, popup reporting, fresh CSRF, age-only filtering, automatic age expiry, and old cache entries. This suite accelerates queue waits; the unit suite checks production pacing separately.
 

@@ -39,12 +39,19 @@ try {
   const popup = await context.newPage();
   popup.on('pageerror', error => errors.push(error.message));
   await popup.goto(`chrome-extension://${id}/popup/index.html`);
-  await check('Default settings: India and Africa, region expansion enabled', async () => {
-    await popup.getByRole('button', {name:'Remove India', exact:true}).waitFor();
+  await check('Fresh install has no selected regions and retains the age filter', async () => {
+    await popup.locator('#settings:not([disabled])').waitFor();
+    assert.equal(await popup.locator('#chips button').count(),0);
+    assert.match(await popup.locator('#chips').innerText(),/No regions blocked/);
     assert.equal(await popup.locator('#expand').isChecked(), true);
     assert.equal(await popup.locator('#new-accounts').isChecked(), true);
-    await popup.getByRole('button', {name:'Remove Africa', exact:true}).waitFor();
   });
+  // These regions are explicit test selections, not installation defaults.
+  for(const label of ['India','Africa']) {
+    await popup.locator('#place').fill(label);
+    await popup.locator('#place').press('Enter');
+  }
+  await popup.evaluate(()=>saving);
   await popup.screenshot({path: path.resolve('test-results/popup.png'), fullPage: true});
   const page = await context.newPage();
   page.on('pageerror', error => errors.push(error.message));

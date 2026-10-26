@@ -28,7 +28,7 @@ try {
   await test('Initial settings render with the bundled font and no invented feed totals', async () => {
     assert.equal(await popup.locator('#enabled').isChecked(), true);
     assert.equal(await popup.locator('#new-accounts').isChecked(), true);
-    assert.equal(await popup.locator('#count').innerText(), '2 selected');
+    assert.equal(await popup.locator('#count').innerText(), '0 selected');
     assert.equal(await popup.locator('#state-title').innerText(), 'Ready for X');
     assert.equal(await popup.evaluate(() => document.fonts.check('14px Geist')), true);
     assert.match(await popup.locator('#feed-status').innerText(), /Open your X Home/);
@@ -51,7 +51,7 @@ try {
     assert.ok((await worker.evaluate(async () => (await chrome.storage.local.get('settings')).settings)).blocked.includes('Europe'));
     await popup.locator('#place').fill('europe');
     await popup.locator('#place').press('Enter');
-    assert.equal(await popup.locator('#chips button').count(), 3);
+    assert.equal(await popup.locator('#chips button').count(), 1);
     assert.match(await popup.locator('#place-feedback').innerText(), /already blocked/);
     await popup.locator('#place').fill('A'.repeat(80));
     await popup.locator('#place').press('Enter');
@@ -59,7 +59,7 @@ try {
     await popup.getByRole('button', {name:`Remove ${'A'.repeat(80)}`, exact:true}).click();
   });
   await test('Removal preserves keyboard focus and an empty region list keeps age filtering', async () => {
-    for (const label of ['India', 'Africa', 'Europe']) await popup.getByRole('button', {name:`Remove ${label}`, exact:true}).click();
+    for (const label of ['Europe']) await popup.getByRole('button', {name:`Remove ${label}`, exact:true}).click();
     assert.equal(await popup.evaluate(() => document.activeElement.id), 'place');
     assert.match(await popup.locator('#chips').innerText(), /No regions blocked/);
     await popup.evaluate(() => saving);

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+- Start new installations with an empty region list while preserving saved choices on update.
+
 ## 0.5.0
 
 - Reorganized the extension into a standalone repository with portable tests, CI, and repeatable ZIP packaging.

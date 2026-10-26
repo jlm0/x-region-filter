@@ -74,9 +74,22 @@ async function harness(saved={}) {
   async function connect(){for(const fn of events.headers)fn({tabId:1,requestHeaders:[{name:'authorization',value:'Bearer test-only-token'}]});await settle();}
   return {context,run,advance,connect,events,calls,local,session,get maxActive(){return maxActive;}};
 }
+await test('Fresh installs choose no regions; updates retain saved filters and limits',async()=>{
+  const fresh=await harness();
+  assert.equal(fresh.context.XRF.settings().blocked.length,0);
+  assert.equal(fresh.context.XRF.settings().blockNewAccounts,true);
+  for(const fn of fresh.events.install)fn();await settle();
+  assert.deepEqual(fresh.local.settings.blocked,[]);
+  const settings={enabled:false,blocked:['Europe'],expandRegions:false,blockNewAccounts:false};
+  const guard={starts:[1699999999000],nextAt:1700000030000,until:1700000060000,reason:'Saved cooldown'};
+  const existing=await harness({local:{settings,guard}});
+  for(const fn of existing.events.install)fn();await settle();
+  assert.deepEqual(existing.local.settings,settings);
+  assert.deepEqual(existing.local.guard,guard);
+});
 await test('Region hierarchy: Africa, countries, subregions, aliases, and exact-only mode',async()=>{
   const h=await harness();const x=h.context.XRF;
-  const c=x.settings();
+  const c=x.settings({blocked:['India','Africa']});
   for(const label of ['India','Nigeria','South Africa','Northern Africa','Sub-Saharan Africa','Africa','Kenya','IN']) assert.equal(x.matches(label,c),true,label);
   for(const label of ['France','Asia','Indiana','Indian Ocean','Unknown',''])assert.equal(x.matches(label,c),false,label);
   assert.equal(x.matches('India',x.settings({blocked:['South Asia']})),true);
@@ -188,7 +201,7 @@ await test('Age settings preserve regions and allow age-only filtering',async()=
   assert.equal(x.settings({blockNewAccounts:false}).blockNewAccounts,false);
 });
 await test('Three calendar months: exact anniversary, month ends, leap years and invalid dates',async()=>{
-  const h=await harness();const x=h.context.XRF,c=x.settings();
+  const h=await harness();const x=h.context.XRF,c=x.settings({blocked:['India','Africa']});
   const createdAt=Date.parse('2026-07-25T12:00:00Z'),end=Date.parse('2026-10-25T12:00:00Z');
   assert.equal(x.matchReason({location:'France',createdAt},c,end-1),'age');
   assert.equal(x.matchReason({location:'France',createdAt},c,end),null);
