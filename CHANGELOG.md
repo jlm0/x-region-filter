@@ -3,6 +3,7 @@
 ## 0.5.1
 
 - Start new installations with an empty region list while preserving saved choices on update.
+- Replace the README popup screenshot with a product banner.
 
 ## 0.5.0
 

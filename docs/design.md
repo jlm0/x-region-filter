@@ -8,6 +8,11 @@ The first screen holds the master switch, connection/feed feedback, region contr
 
 The popup is checked at 420, 390, and 360 pixels. Native details and form controls preserve keyboard behavior. Motion is limited to the toggle, with reduced-motion support. The help page uses the same local typeface and neutral palette.
 
-The Taste inspector's static HTTP rendering cannot access Chrome extension storage or worker messaging. Its layout measurements cover the loading shell; the browser suite loads the actual extension for populated controls, saved settings, error states, and screenshots. The screenshot in the README shows the actual extension before connecting to X.
+The Taste inspector's static HTTP rendering cannot access Chrome extension storage or worker messaging. Its layout measurements cover the loading shell; the browser suite loads the actual extension for populated controls, saved settings, error states, and screenshots. Test screenshots stay in the ignored test-results directory. The README uses a separate product banner.
 
 The static inspector reports no failures and one text-size warning because the loading shell is mostly help text. Primary labels and controls use 13–14 pixels, the product name uses 20 pixels, and secondary explanations use 12 pixels. This keeps the normal 420-pixel popup within the browser's 600-pixel height while retaining readable contrast. Populated extension screens were also inspected at all three widths.
+
+
+## README banner
+
+The README banner uses the product name, a filter mark, and an abstract feed illustration. It contains no account examples or selected countries. The built-in image-generation tool created the [banner](images/banner.png); the [generation prompt](images/banner-prompt.txt) records its composition and exact text. The final PNG is 2172 by 724 pixels and scales to the README width.

@@ -1,10 +1,10 @@
 # X Region Filter
 
+<p><img src="docs/images/banner.png" width="100%" alt="X Region Filter. Region and account age filtering for X."></p>
+
 Hide posts in your X feed by an account's region or age. The extension runs locally in Chrome and Brave and applies to Home and List timelines, including reposts and quoted posts.
 
-<p><img src="docs/images/popup.png" width="420" alt="X Region Filter popup with India and Africa selected, the account age filter enabled, and expandable activity details."></p>
-
-The screenshot shows a fresh installation before connecting to X. The project is independent of X and uses X's web interface, which can change without notice.
+The project is independent of X and uses X's web interface, which can change without notice.
 
 ## Install
 
@@ -21,9 +21,11 @@ When updating, replace the files at the same installed path, reload the extensio
 
 ## Set your filters
 
-The defaults block **India and Africa**, include countries within each region, and hide accounts created in the last three calendar months. Change these in the popup; every change saves automatically. The top switch pauses filtering while keeping your choices.
+New installations start with **no blocked regions**. Add the countries or regions you want to filter in the popup. Country expansion and the three-month account age filter are enabled by default.
 
-Region matching uses X's **Account based in** label. Africa includes its countries and subregions using UN M49 membership. North America combines Northern America, Central America, and the Caribbean. Custom labels, including Middle East, match exactly. Selecting India does not match a broader label such as Asia or South Asia. An account's label does not establish its owner's nationality or precise location.
+Changes save automatically, and updates preserve your saved choices. The top switch pauses filtering without clearing them.
+
+Region matching uses X's **Account based in** label. Regions include their countries and subregions using UN M49 membership. North America combines Northern America, Central America, and the Caribbean. Custom labels, including Middle East, match exactly. Selecting a country does not match an account labeled only with a broader region. An account's label does not establish its owner's nationality or precise location.
 
 The age rule uses the account's creation date from the same About response as the region lookup. It stops matching at the three-month anniversary in UTC, with month-end dates clamped to the last valid day. The age switch works independently of the region list. Missing, invalid, and future dates do not trigger it.
 
@@ -69,7 +71,7 @@ On Linux, use `npx playwright install --with-deps chromium` to install browser s
 
 `npm test` checks the manifest and assets, matching and request limits, browser behavior, popup controls, and accessibility. The performance command exercises 12,000 synthetic posts and verifies passive header capture over a local HTTPS server. Tests use disposable browser profiles and synthetic X responses. They do not attach to your signed-in browser or spend your X lookup allowance.
 
-`npm run build` writes `dist/x-region-filter-0.5.0.zip` with only the extension's files and checks every archived file against its source. The build uses fixed timestamps and sorted entries. Test reports and screenshots go to `test-results`; both output folders are ignored by Git.
+`npm run build` writes `dist/x-region-filter-0.5.1.zip` with only the extension's files and checks every archived file against its source. The build uses fixed timestamps and sorted entries. Test reports and screenshots go to `test-results`; both output folders are ignored by Git.
 
 ```text
 extension/
