@@ -60,6 +60,50 @@ try {
     assert.equal(await popup.locator('#chips button').count(),1);
     await popup.getByRole('button',{name:'Remove South Asia',exact:true}).click();
   });
+  await test('The native toolbar popup opens at 460px with its main controls visible', async () => {
+    await popup.evaluate(()=>saving);
+    // Leave room for the browser's toolbar window around the 460px action.
+    await popup.setViewportSize({width:1100,height:850});
+    const saved=await worker.evaluate(()=>config);
+    const browserSession=await context.browser().newBrowserCDPSession();
+    const before=new Set((await browserSession.send('Target.getTargets')).targetInfos.map(target=>target.targetId));
+    let targetId;
+    try {
+      await worker.evaluate(async()=>{
+        await chrome.storage.local.set({settings:{...config,blocked:['Japan','Europe','South Asia','North America']}});
+        const [window]=await chrome.windows.getAll();
+        await chrome.action.openPopup({windowId:window.id});
+      });
+      targetId=(await browserSession.send('Target.getTargets')).targetInfos.find(target=>!before.has(target.targetId)&&target.url===popup.url())?.targetId;
+      assert.ok(targetId,'A native browser-action popup must open');
+      const {sessionId}=await browserSession.send('Target.attachToTarget',{targetId,flatten:false});
+      const result=new Promise((resolve,reject)=>{
+        const timeout=setTimeout(()=>reject(new Error('Native popup did not respond')),10000);
+        const receive=event=>{
+          if(event.sessionId!==sessionId)return;
+          const message=JSON.parse(event.message);
+          if(message.id!==1)return;
+          clearTimeout(timeout);browserSession.off('Target.receivedMessageFromTarget',receive);
+          message.error?reject(new Error(message.error.message)):resolve(message.result);
+        };
+        browserSession.on('Target.receivedMessageFromTarget',receive);
+      });
+      await browserSession.send('Target.sendMessageToTarget',{sessionId,message:JSON.stringify({id:1,method:'Runtime.evaluate',params:{awaitPromise:true,returnByValue:true,expression:`(async()=>{
+        await document.fonts.ready;
+        while(document.querySelector('#settings')?.disabled) await new Promise(resolve=>setTimeout(resolve,20));
+        return {width:innerWidth,height:innerHeight,body:document.body.getBoundingClientRect().width,
+          chips:document.querySelectorAll('#chips button').length,ageBottom:document.querySelector('#new-accounts').getBoundingClientRect().bottom};
+      })()`}})});
+      const metrics=(await result).result.value;
+      assert.equal(metrics.width,460);assert.equal(metrics.body,460);assert.equal(metrics.chips,4);
+      assert.ok(metrics.ageBottom<=metrics.height,JSON.stringify(metrics));
+    } finally {
+      if(targetId)await browserSession.send('Target.closeTarget',{targetId});
+      await browserSession.detach();
+      await worker.evaluate(async settings=>chrome.storage.local.set({settings}),saved);
+      await popup.setViewportSize({width:460,height:600});
+    }
+  });
   await test('Keyboard can add a region; duplicate and long labels stay readable', async () => {
     await popup.locator('#place').fill('Europe');
     await popup.locator('#place').press('Enter');
