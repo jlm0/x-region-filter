@@ -1,6 +1,6 @@
 # Contributing
 
-Use Node.js 22 or later and the setup commands in the README. The `extension` directory is directly loadable, so UI edits need no build step. Reload the extension and your test X tab after changing content scripts or the worker.
+Use Node.js 22 or later. Install development dependencies with `npm ci`, then install the test browser with `npx playwright install chromium`. The `extension` directory is directly loadable, so UI edits need no build step. Reload the extension and your test X tab after changing content scripts or the worker.
 
 Keep changes small enough to review. A popup change should not alter the request queue or matching rules. If you change a rule, add a case that shows the wrong result before the fix. If you change the request path, run both the controlled-clock suite and the local HTTPS transport check.
 
