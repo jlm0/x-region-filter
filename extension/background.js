@@ -1,4 +1,4 @@
-importScripts('2026-10-25_extension_regions.js', '2026-10-25_extension_core.js', '2026-10-25_extension_endpoint.js');
+importScripts('shared/regions.js', 'shared/core.js', 'shared/endpoint.js');
 'use strict';
 const DAY = 86400000;
 const MAX_CACHE = 2000;

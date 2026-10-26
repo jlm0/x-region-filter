@@ -4,14 +4,34 @@
   "version": "0.4.0",
   "description": "Hide feed posts, reposts and quotes by account region or accounts under three months old.",
   "minimum_chrome_version": "120",
-  "permissions": ["storage", "webRequest"],
-  "host_permissions": ["https://x.com/*"],
-  "background": {"service_worker": "2026-10-25_extension_background.js"},
-  "action": {"default_title": "X Region Filter", "default_popup": "2026-10-25_extension_popup.html"},
-  "content_scripts": [{
-    "matches": ["https://x.com/*"],
-    "js": ["2026-10-25_extension_regions.js", "2026-10-25_extension_core.js", "2026-10-25_extension_content.js"],
-    "css": ["2026-10-25_extension_content.css"],
-    "run_at": "document_idle"
-  }]
+  "permissions": [
+    "storage",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "https://x.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "X Region Filter",
+    "default_popup": "popup/index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://x.com/*"
+      ],
+      "js": [
+        "shared/regions.js",
+        "shared/core.js",
+        "content/content.js"
+      ],
+      "css": [
+        "content/content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
 }

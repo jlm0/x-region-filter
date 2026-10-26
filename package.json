@@ -1,0 +1,23 @@
+{
+  "name": "x-region-filter",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Filter X feed posts by account region and age.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "test": "npm run check && npm run test:unit && npm run test:browser",
+    "test:unit": "node tests/rules-worker.test.mjs",
+    "test:browser": "node tests/browser.test.mjs",
+    "test:performance": "node tests/performance.test.mjs",
+    "build": "node scripts/package.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1",
+    "fflate": "0.8.3",
+    "axe-core": "4.14.0"
+  }
+}
