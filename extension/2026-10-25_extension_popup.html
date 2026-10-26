@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X Region Filter</title><link rel="stylesheet" href="2026-10-25_extension_popup.css"></head>
+<body>
+  <header><div><p class="eyebrow">YOUR FEED, YOUR CHOICE</p><h1>X Region Filter</h1></div>
+    <label class="switch"><input type="checkbox" id="enabled" aria-label="Enable filtering"><span></span></label>
+  </header>
+  <p class="intro">Hide posts, reposts and quotes by account region or age.</p>
+  <section aria-labelledby="blocked-title">
+    <div class="section-head"><h2 id="blocked-title">Blocked places</h2><span id="count"></span></div>
+    <div id="chips" aria-label="Blocked places"></div>
+    <form id="add-form"><label class="sr-only" for="place">Country or region</label>
+      <input id="place" list="places" placeholder="Add a country or region…" autocomplete="off" maxlength="80" required>
+      <datalist id="places"></datalist><button type="submit">Add</button>
+    </form>
+    <label class="check"><input id="expand" type="checkbox">Include countries within each region</label>
+    <details><summary>See which countries are included</summary><div id="coverage"></div>
+      <p class="note">Groups use UN M49. North America also includes Central America and the Caribbean. “Middle East” and custom labels match X’s label exactly.</p>
+    </details>
+  </section>
+  <section aria-labelledby="age-title"><h2 id="age-title">Account age</h2>
+    <label class="check"><input id="new-accounts" type="checkbox">Hide accounts under 3 months old</label>
+    <p class="note">Uses three calendar months from the account’s creation date. Dates come from the same region lookup. Existing cached accounts are not rechecked early; missing dates do not trigger this rule.</p>
+  </section>
+  <section class="behavior"><h2>Also catches shared posts</h2>
+    <p>Either rule matching the author, original author, visible reposter or any visible quoted author hides the whole feed item.</p>
+    <p>Works in Home and Lists. Small placeholders show whether region or account age caused the match.</p>
+  </section>
+  <footer><p id="status" role="status" aria-live="polite">Loading…</p>
+    <p id="feed-status" class="note" aria-live="polite"></p>
+    <p id="last-lookup" class="note"></p>
+    <p id="quota-status" class="note"></p>
+    <div class="footer-actions"><button id="clear" type="button" class="quiet">Clear account cache</button>
+      <a href="2026-10-25_extension_guide.html" target="_blank" rel="noopener">Setup &amp; details ↗</a></div>
+  </footer>
+  <script src="2026-10-25_extension_regions.js"></script>
+  <script src="2026-10-25_extension_core.js"></script>
+  <script src="2026-10-25_extension_popup.js"></script>
+</body></html>

@@ -1,0 +1,9 @@
+node_modules/
+.local/
+.taste-skill/
+test-results/
+dist/
+.DS_Store
+*.pem
+*.key
+.env*

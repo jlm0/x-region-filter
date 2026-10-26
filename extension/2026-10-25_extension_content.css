@@ -1,0 +1,25 @@
+/* Leave React-owned rows in place; X can measure and recycle them. */
+article[data-testid="tweet"][data-xrf-hidden="true"] {
+  display: block !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+article[data-testid="tweet"][data-xrf-hidden="true"] > * {
+  display: none !important;
+}
+article[data-testid="tweet"][data-xrf-hidden="true"]::after {
+  content: "Post hidden by region filter";
+  display: block;
+  padding: 7px 16px;
+  color: #8b98a5;
+  font: 11px/14px system-ui, sans-serif;
+}
+article[data-testid="tweet"][data-xrf-hidden="true"][data-xrf-reason="age"]::after {
+  content: "Post hidden: account under 3 months old";
+}
